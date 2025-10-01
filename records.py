@@ -172,4 +172,3 @@ def download_excel():
                     ws.add_image(img, f'H{row}')
             except Exception as e:
                 print(f"Excel image error: {e}")
-
