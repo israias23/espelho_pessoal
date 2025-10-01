@@ -1,5 +1,4 @@
 import requests
-import resend
 
 def send_email_resend(to, subject, body):
     api_key = 're_BREyAp2F_8LA1ZVmYKWs8EK6hkyzmBqPk'  # substitua pela sua chave
