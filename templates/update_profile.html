@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Update Profile{% endblock %}
+{% block content %}
+<div class="card p-4">
+    <h2 class="text-center mb-4">Atualizar dados</h2>
+    <form method="POST" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label class="form-label">Novo Email (opcional)</label>
+            <input type="email" name="email" class="form-control">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Nova Senha (opcional)</label>
+            <input type="password" name="password" placeholder="Ex: @Senha123" class="form-control">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Foto de perfil</label>
+            <input type="file" name="profile_photo" class="form-control" accept="image/*">
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Atualizar</button>
+    </form>
+</div>
+{% endblock %}

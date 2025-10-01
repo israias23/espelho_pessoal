@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<div class="card p-4">
+    <h2 class="text-center mb-4">Cadastro</h2>
+    <form method="POST">
+        <div class="mb-3">
+            <label class="form-label">Nomde completo</label>
+            <input type="text" name="name" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Senha</label>
+            <input type="password" name="password" class="form-control" minlength="8" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Empresa atual</label>
+            <input type="text" name="company" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Cadastrar</button>
+    </form>
+    <p class="text-center mt-3">Já tem conta? <a href="{{ url_for('auth.login') }}">Login</a></p>
+</div>
+{% endblock %}

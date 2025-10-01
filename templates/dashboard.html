@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h2 class="mb-4">Olá, {{ current_user.name }}!</h2>
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Adicionar novo registro</h5>
+        <form method="POST" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label class="form-label">Foto (use camera ou faça upload)</label>
+                <input type="file" name="photo" class="form-control" capture="camera" accept="image/*" onchange="previewPhoto(this, 'photoPreview')" required>
+                <img id="photoPreview" class="thumbnail mt-2" style="display:none;">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Tipo</label>
+                <select name="type" class="form-select" required>
+                    <option value="entry">Entrada</option>
+                    <option value="exit">Saída</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Anotação</label>
+                <input type="text" name="note" class="form-control">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Intervalo</label>
+                <input type="number" name="break_duration" class="form-control">
+            </div>
+            <input type="hidden" name="location" id="location">
+            <button type="submit" class="btn btn-primary">Salvar Registro</button>
+        </form>
+    </div>
+</div>
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Seus Registros</h5>
+        {% if records %}
+        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Horário</th>
+                        <th>Tipo</th>
+                        <th>Anotação</th>
+                        <th>Intervalo</th>
+                        <th>Local</th>
+                        <th>Registro</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rec in records %}
+                    <tr>
+                        <td>{{ rec.date }}</td>
+                        <td>{{ rec.time }}</td>
+                        <td>{{ rec.type | capitalize }}</td>
+                        <td>{{ rec.note }}</td>
+                        <td>{{ rec.break_duration }}</td>
+                        <td>{{ rec.location }}</td>
+                        <td><img src="/{{ rec.photo_path }}" class="thumbnail" alt="Photo"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {{ pagination.links }}
+        {% else %}
+        <p>No records yet.</p>
+        {% endif %}
+        <h5>Daily Hours</h5>
+        <ul>
+            {% for date, hours in daily_hours.items() %}
+            <li>{{ date }}: {{ hours | round(2) }} hours</li>
+            {% endfor %}
+        </ul>
+        <a href="{{ url_for('records.download_pdf') }}" class="btn btn-outline-primary mt-3">Baixar PDF</a>
+        <a href="{{ url_for('records.download_excel') }}" class="btn btn-outline-primary mt-3">Baixar Excel</a>
+        <a href="{{ url_for('records.manual_send_monthly_report') }}" class="btn btn-outline-success mt-3">Enviar por E-mail</a>  <!-- Nome da rota corrigido aqui -->
+        <a href="{{ url_for('records.calendar') }}" class="btn btn-outline-info mt-3">Calendário</a>
+    </div>
+</div>
+<script>
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            document.getElementById('location').value = position.coords.latitude + ',' + position.coords.longitude;
+        });
+    }
+</script>
+{% endblock %}
