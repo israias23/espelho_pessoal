@@ -4,11 +4,9 @@ from models import db, Record, User
 from datetime import datetime, timedelta
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from reportlab.lib.utils import ImageReader
-from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
 from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
 import openpyxl
 from flask_paginate import Pagination, get_page_args
 from collections import defaultdict
@@ -16,7 +14,6 @@ from auth import send_email_resend as send_email, send_push_notification
 from flask import current_app as app
 from cloudinary_utils import upload_image_to_cloudinary
 import requests
-from PIL import Image as PILImage
 from tempfile import NamedTemporaryFile
 
 records_bp = Blueprint('records', __name__)
@@ -64,17 +61,15 @@ def generate_professional_pdf(filename, records, user_name, company, month_year=
     title_text = f"Registros de pontos de {user_name} em {company}"
     if month_year:
         title_text += f" ({month_year})"
-    title = Paragraph(title_text, styles['Title'])
-    elements.append(title)
+    elements.append(Paragraph(title_text, styles['Title']))
     elements.append(Paragraph("", styles['Normal']))
     daily_data = defaultdict(list)
     daily_hours = calculate_hours(records)
     for rec in records:
         daily_data[rec.date].append(rec)
     for date, day_records in sorted(daily_data.items()):
-        date_header = Paragraph(f"Data: {date} - Horas total: {daily_hours.get(date, 0):.2f}", styles['Heading2'])
-        elements.append(date_header)
-        data = [['Horário', 'Tipo', 'Anotação', 'intervalo', 'Local', 'Registro']]
+        elements.append(Paragraph(f"Data: {date} - Horas total: {daily_hours.get(date, 0):.2f}", styles['Heading2']))
+        data = [['Horário', 'Tipo', 'Anotação', 'Intervalo', 'Local', 'Registro']]
         for rec in sorted(day_records, key=lambda r: r.time):
             loc = rec.location if rec.location else 'N/A'
             if loc != 'N/A':
@@ -84,17 +79,10 @@ def generate_professional_pdf(filename, records, user_name, company, month_year=
             if rec.photo_path:
                 try:
                     img_data = requests.get(rec.photo_path).content
-                    with NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
-                        tmp.write(img_data)
-                        tmp.flush()
-                        img = openpyxl.drawing.image.Image(tmp.name)
-                        img.width = 100
-                        img.height = 100
-                        ws.add_image(img, f'H{row}')
+                    photo_cell = Image(BytesIO(img_data), width=45, height=45)
                 except Exception as e:
-                    print(f"Excel image error: {e}")
-            row = [rec.time, rec.type.capitalize(), rec.note or 'N/A', rec.break_duration, loc, photo_cell]
-            data.append(row)
+                    print(f"PDF image error: {e}")
+            data.append([rec.time, rec.type.capitalize(), rec.note or 'N/A', rec.break_duration, loc, photo_cell])
         table = Table(data, colWidths=[60, 60, 100, 80, 100, 60])
         table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
@@ -125,10 +113,11 @@ def dashboard():
         now = datetime.now()
         date = now.strftime('%Y-%m-%d')
         time = now.strftime('%H:%M:%S')
-        filename = f"{uuid.uuid4()}"
+        filename = f"{date}_{time}"
         photo_url = upload_image_to_cloudinary(photo.stream, filename)
         record = Record(user_id=current_user.id, date=date, time=time, type=entry_type, note=note,
-                        break_duration=int(break_duration) if break_duration else 0, location=location, photo_path=photo_url)
+                        break_duration=int(break_duration) if break_duration else 0,
+                        location=location, photo_path=photo_url)
         db.session.add(record)
         db.session.commit()
         flash('Registro salvo com sucesso!', 'success')
@@ -174,3 +163,7 @@ def download_excel():
         if rec.photo_path:
             try:
                 img_data = requests.get(rec.photo_path).content
+                with NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+                    tmp.write(img_data)
+                    tmp.flush()
+                    img
