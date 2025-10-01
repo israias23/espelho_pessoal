@@ -189,5 +189,5 @@ def send_push_notification(user, title, body):
         except WebPushException as e:
             print(f"Push error: {e}")
 
-send_email = send_email_resend
+send_email = send_email_resend #compatibilidade com outros módulos
 
