@@ -4,7 +4,7 @@ import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key_change_this'
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('postgresql://espelho_db_user:RUWbxjWCi7julPt0ePD9PJOKjEDLGgQm@dpg-d3e7lo1r0fns73b4rod0-a/espelho_db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
   # Use credenciais da plataforma
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
