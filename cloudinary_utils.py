@@ -2,9 +2,9 @@ import cloudinary
 import cloudinary.uploader
 
 cloudinary.config(
-  cloud_name='SEU_CLOUD_NAME',
-  api_key='SUA_API_KEY',
-  api_secret='SEU_API_SECRET',
+  cloud_name='dznn4uaff',
+  api_key='641122556492738',
+  api_secret='oMznUr6qnNMVzpMuGPdcB9iS7AA',
   secure=True
 )
 
