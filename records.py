@@ -166,4 +166,10 @@ def download_excel():
                 with NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
                     tmp.write(img_data)
                     tmp.flush()
-                    img
+                    img = openpyxl.drawing.image.Image(tmp.name)
+                    img.width = 100
+                    img.height = 100
+                    ws.add_image(img, f'H{row}')
+            except Exception as e:
+                print(f"Excel image error: {e}")
+
