@@ -15,7 +15,7 @@ import openpyxl
 from flask_paginate import Pagination, get_page_args
 from collections import defaultdict
 from datetime import timedelta
-from auth import send_email, send_push_notification
+from auth import send_email_resend, send_push_notification
 from flask import current_app as app
 
 records_bp = Blueprint('records', __name__)
