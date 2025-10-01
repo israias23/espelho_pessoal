@@ -4,10 +4,6 @@ from flask_login import LoginManager, login_user, logout_user, current_user, log
 from models import db, User
 from datetime import datetime, timedelta, timezone
 import random
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
 import os
 import uuid
 import json
@@ -21,6 +17,7 @@ from safe_db import (
     update_user_profile,
     save_push_subscription
 )
+from email_utils import send_email_resend
 
 auth_bp = Blueprint('auth', __name__)
 login_manager = LoginManager()
@@ -32,30 +29,6 @@ def init_auth(flask_app):
 @login_manager.user_loader
 def load_user(user_id):
     return get_user_by_id(user_id)
-
-def send_email(to, subject, body, attachment_path=None):
-    from_email = 'pontopessoal128@gmail.com'
-    password = 'rcas emoy weba twtx'
-    msg = MIMEMultipart()
-    msg['From'] = from_email
-    msg['To'] = to
-    msg['Subject'] = subject
-    msg.attach(MIMEText(body, 'plain'))
-    if attachment_path:
-        with open(attachment_path, 'rb') as f:
-            part = MIMEApplication(f.read(), Name=os.path.basename(attachment_path))
-        part['Content-Disposition'] = f'attachment; filename="{os.path.basename(attachment_path)}"'
-        msg.attach(part)
-    try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(from_email, password)
-        server.send_message(msg)
-        server.quit()
-        return True
-    except Exception as e:
-        print(f"Email error: {e}")
-        return False
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
@@ -112,10 +85,10 @@ def forgot_password():
             session['reset_code'] = code
             session['reset_email'] = email
             session['reset_time'] = datetime.now(timezone.utc)
-            if send_email(email, 'Código de Redefinição de Senha', f'Seu código de redefinição é: {code} (expira em 10 minutos)'):
-                flash('Código de redefinição enviado para o seu e-mail.', 'success')
+            if send_email_resend(email, 'Código de Redefinição de Senha', f'Seu código é: {code} (expira em 10 minutos)'):
+                flash('Código enviado para seu e-mail.', 'success')
             else:
-                flash('Falha ao enviar para email. Entre em contato com suporte.', 'error')
+                flash('Erro ao enviar e-mail. Tente novamente mais tarde.', 'error')
             return redirect(url_for('auth.reset_password'))
         flash('Email não encontrado.', 'error')
     return render_template('forgot_password.html')
@@ -173,7 +146,7 @@ def delete_account():
             if datetime.now(timezone.utc) - session['delete_time'] > timedelta(minutes=10):
                 flash('Código expirado! Solicite outro.', 'error')
                 return render_template('delete_account.html')
-            send_email(current_user.email, 'Confirmação de Exclusão de Conta', 'Sua conta foi deletada.')
+            send_email_resend(current_user.email, 'Confirmação de Exclusão de Conta', 'Sua conta foi deletada.')
             if delete_user(current_user):
                 logout_user()
                 session.clear()
@@ -187,10 +160,10 @@ def delete_account():
         code = str(random.randint(100000, 999999))
         session['delete_code'] = code
         session['delete_time'] = datetime.now(timezone.utc)
-        if send_email(current_user.email, 'Código de Exclusão de Conta', f'Seu código de exclusão é: {code} (expira em 10 minutos)'):
-            flash('Código de exclusão enviado para o seu e-mail.', 'success')
+        if send_email_resend(current_user.email, 'Código de Exclusão de Conta', f'Seu código é: {code} (expira em 10 minutos)'):
+            flash('Código enviado para seu e-mail.', 'success')
         else:
-            flash('Falha ao enviar email.', 'error')
+            flash('Erro ao enviar e-mail.', 'error')
     return render_template('delete_account.html')
 
 @auth_bp.route('/subscribe_push', methods=['POST'])
