@@ -126,12 +126,8 @@ def update_profile():
         password = request.form.get('password')
         photo = request.files.get('profile_photo')
         hashed_pw = generate_password_hash(password) if password else None
-        photo_path = None
-        if photo:
-            filename = f"profile_{uuid.uuid4()}.jpg"
-            photo_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            photo.save(photo_path)
-        if update_user_profile(current_user, email=email, password_hash=hashed_pw, photo_path=photo_path):
+        photo_url = upload_image_to_cloudinary(photo.stream, photo.filename) if photo else None
+        if update_user_profile(current_user, email=email, password_hash=hashed_pw, photo_path=photo_url):
             flash('Seus dados foram salvos!', 'success')
         else:
             flash('Erro ao atualizar perfil.', 'error')
@@ -190,5 +186,4 @@ def send_push_notification(user, title, body):
         except WebPushException as e:
             print(f"Push error: {e}")
 
-send_email = send_email_resend #compatibilidade com outros módulos
-
+send_email = send_email_resend  # compatibilidade com outros módulos
