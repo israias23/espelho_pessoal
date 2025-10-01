@@ -92,7 +92,7 @@ def generate_professional_pdf(filename, records, user_name, company, month_year=
                         img.height = 100
                         ws.add_image(img, f'H{row}')
                 except Exception as e:
-                    print(f"Excel image error: {e}"
+                    print(f"Excel image error: {e}")
             row = [rec.time, rec.type.capitalize(), rec.note or 'N/A', rec.break_duration, loc, photo_cell]
             data.append(row)
         table = Table(data, colWidths=[60, 60, 100, 80, 100, 60])
