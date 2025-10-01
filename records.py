@@ -98,18 +98,25 @@ def generate_professional_pdf(filename, records, user_name, company, month_year=
         elements.append(Paragraph("", styles['Normal']))
     doc.build(elements)
 
-@records_bp.route('/dashboard', methods=['GET', 'POST'])
+@records_bp.route('/send_monthly_report')
 @login_required
-def dashboard():
-    if request.method == 'POST':
-        photo = request.files.get('photo')
-        entry_type = request.form.get('type')
-        note = request.form.get('note')
-        break_duration = request.form.get('break_duration')
-        location = request.form.get('location')
-        if not photo or not entry_type:
-            flash('Foto e tipo são obrigatórios.', 'error')
-            return redirect(url_for('records.dashboard'))
+def manual_send_monthly_report():
+    now = datetime.now()
+    start_of_month = now.replace(day=1).strftime('%Y-%m-%d')
+    records = Record.query.filter_by(user_id=current_user.id).filter(Record.date >= start_of_month).all()
+    if not records:
+        flash('Nenhum registro este mês.', 'info')
+        return redirect(url_for('records.dashboard'))
+    
+    temp_pdf = f'temp_report_{current_user.id}.pdf'
+    generate_professional_pdf(temp_pdf, records, current_user.name, current_user.company, now.strftime('%B %Y'))
+    
+        if send_email(current_user.email, 'Relatório Mensal de Horas', 'Seu relatório mensal está anexado.', temp_pdf):
+            flash('Relatório mensal enviado para o seu e-mail!', 'success')
+        else:
+            flash('Falha ao enviar o relatório! Contate o suporte.', 'error')
+        os.remove(temp_pdf)
+        return redirect(url_for('records.dashboard'))
         now = datetime.now()
         date = now.strftime('%Y-%m-%d')
         time = now.strftime('%H:%M:%S')
