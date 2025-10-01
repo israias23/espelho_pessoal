@@ -1,9 +1,7 @@
 from flask import Blueprint, request, render_template, redirect, url_for, flash, send_file
 from flask_login import login_required, current_user
 from models import db, Record, User
-from datetime import datetime
-import os
-import uuid
+from datetime import datetime, timedelta
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -14,9 +12,12 @@ from reportlab.lib.styles import getSampleStyleSheet
 import openpyxl
 from flask_paginate import Pagination, get_page_args
 from collections import defaultdict
-from datetime import timedelta
-from auth import send_email_resend, send_push_notification
+from auth import send_email_resend as send_email, send_push_notification
 from flask import current_app as app
+from cloudinary_utils import upload_image_to_cloudinary
+import requests
+from PIL import Image as PILImage
+from tempfile import NamedTemporaryFile
 
 records_bp = Blueprint('records', __name__)
 
@@ -28,10 +29,8 @@ def send_monthly_report():
             records = Record.query.filter_by(user_id=user.id).filter(Record.date >= start_of_month).all()
             if not records:
                 continue
-            
             temp_pdf = f'temp_report_{user.id}.pdf'
             generate_professional_pdf(temp_pdf, records, user.name, user.company, now.strftime('%B %Y'))
-            
             send_email(user.email, 'Relatório Mensal de Horas', 'Seu relatório mensal está anexado.', temp_pdf)
             os.remove(temp_pdf)
 
@@ -45,70 +44,54 @@ def calculate_hours(records):
     daily_data = defaultdict(list)
     for rec in records:
         daily_data[rec.date].append(rec)
-    
     for date, day_records in daily_data.items():
         day_records.sort(key=lambda r: datetime.strptime(r.time, '%H:%M:%S'))
         entries = [r for r in day_records if r.type == 'Entrada']
         exits = [r for r in day_records if r.type == 'Saída']
-        total_breaks = sum(r.break_duration for r in day_records) / 60.0  # em horas
-        
-        # Pair entry-exit
+        total_breaks = sum(r.break_duration for r in day_records) / 60.0
         min_pairs = min(len(entries), len(exits))
         for i in range(min_pairs):
             entry_time = datetime.strptime(f"{date} {entries[i].time}", '%Y-%m-%d %H:%M:%S')
             exit_time = datetime.strptime(f"{date} {exits[i].time}", '%Y-%m-%d %H:%M:%S')
             daily_hours[date] += (exit_time - entry_time)
-        
         daily_hours[date] -= timedelta(hours=total_breaks)
-    
     return {date: hours.total_seconds() / 3600 for date, hours in daily_hours.items()}
 
 def generate_professional_pdf(filename, records, user_name, company, month_year=None):
     doc = SimpleDocTemplate(filename, pagesize=letter)
     elements = []
     styles = getSampleStyleSheet()
-    
-    # Title
     title_text = f"Registros de pontos de {user_name} em {company}"
     if month_year:
         title_text += f" ({month_year})"
     title = Paragraph(title_text, styles['Title'])
     elements.append(title)
-    elements.append(Paragraph("", styles['Normal']))  # Spacer
-    
-    # Group records by date
+    elements.append(Paragraph("", styles['Normal']))
     daily_data = defaultdict(list)
     daily_hours = calculate_hours(records)
     for rec in records:
         daily_data[rec.date].append(rec)
-    
     for date, day_records in sorted(daily_data.items()):
-        # Date header
         date_header = Paragraph(f"Data: {date} - Horas total: {daily_hours.get(date, 0):.2f}", styles['Heading2'])
         elements.append(date_header)
-        
-        # Table data with images in cells
         data = [['Horário', 'Tipo', 'Anotação', 'intervalo', 'Local', 'Registro']]
         for rec in sorted(day_records, key=lambda r: r.time):
             loc = rec.location if rec.location else 'N/A'
             if loc != 'N/A':
                 lat, lon = loc.split(',')
-                loc = f"{float(lat):.4f}, {float(lon):.4f}"  # Rounded for neatness
-            
+                loc = f"{float(lat):.4f}, {float(lon):.4f}"
             photo_cell = 'N/A'
             if rec.photo_path:
                 try:
-                    photo_cell = Image(rec.photo_path, width=45, height=45)  # Small thumbnail in table cell
+                    img_data = requests.get(rec.photo_path).content
+                    img_reader = ImageReader(BytesIO(img_data))
+                    photo_cell = Image(img_reader, width=45, height=45)
                 except Exception as e:
                     print(f"Image embed error: {e}")
-                    photo_cell = 'N/A'
-            
             row = [rec.time, rec.type.capitalize(), rec.note or 'N/A', rec.break_duration, loc, photo_cell]
             data.append(row)
-        
-        # Create table
-        table = Table(data, colWidths=[60, 60, 100, 80, 100, 60])  # Adjusted widths for photo
-        table_style = TableStyle([
+        table = Table(data, colWidths=[60, 60, 100, 80, 100, 60])
+        table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
@@ -116,13 +99,10 @@ def generate_professional_pdf(filename, records, user_name, company, month_year=
             ('BOTTOMPADDING', (0, 0), (-1, 0), 20),
             ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
             ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),  # Center vertically for images
-        ])
-        table.setStyle(table_style)
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
         elements.append(table)
-        
-        elements.append(Paragraph("", styles['Normal']))  # Spacer between dates
-    
+        elements.append(Paragraph("", styles['Normal']))
     doc.build(elements)
 
 @records_bp.route('/dashboard', methods=['GET', 'POST'])
@@ -140,24 +120,20 @@ def dashboard():
         now = datetime.now()
         date = now.strftime('%Y-%m-%d')
         time = now.strftime('%H:%M:%S')
-        filename = f"{uuid.uuid4()}.jpg"
-        path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        photo.save(path)
-        record = Record(user_id=current_user.id, date=date, time=time, type=entry_type, note=note, 
-                        break_duration=int(break_duration) if break_duration else 0, location=location, photo_path=path)
+        filename = f"{uuid.uuid4()}"
+        photo_url = upload_image_to_cloudinary(photo.stream, filename)
+        record = Record(user_id=current_user.id, date=date, time=time, type=entry_type, note=note,
+                        break_duration=int(break_duration) if break_duration else 0, location=location, photo_path=photo_url)
         db.session.add(record)
         db.session.commit()
         flash('Registro salvo com sucesso!', 'success')
-    
     all_records = Record.query.filter_by(user_id=current_user.id).all()
     daily_hours = calculate_hours(all_records)
-    
     page, per_page, offset = get_page_args(page_parameter='page', per_page_parameter='per_page')
     per_page = 10
     total = len(all_records)
     records = all_records[offset: offset + per_page]
     pagination = Pagination(page=page, per_page=per_page, total=total, css_framework='bootstrap5')
-    
     return render_template('dashboard.html', records=records, pagination=pagination, daily_hours=daily_hours, vapid_public_key=app.config['VAPID_PUBLIC_KEY'])
 
 @records_bp.route('/calendar')
@@ -190,34 +166,6 @@ def download_excel():
     for rec in records:
         daily_h = daily_hours.get(rec.date, 0) if rec.date != last_date else ''
         ws.append([rec.date, rec.time, rec.type, rec.note, rec.break_duration, rec.location, rec.photo_path, daily_h])
-        img = openpyxl.drawing.image.Image(rec.photo_path)
-        img.width = 100
-        img.height = 100
-        ws.add_image(img, f'H{row}')
-        ws.row_dimensions[row].height = 75
-        row += 1
-        last_date = rec.date
-    buffer = BytesIO()
-    wb.save(buffer)
-    buffer.seek(0)
-    return send_file(buffer, as_attachment=True, download_name='records.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-
-@records_bp.route('/send_monthly_report')
-@login_required
-def manual_send_monthly_report():
-    now = datetime.now()
-    start_of_month = now.replace(day=1).strftime('%Y-%m-%d')
-    records = Record.query.filter_by(user_id=current_user.id).filter(Record.date >= start_of_month).all()
-    if not records:
-        flash('Nenhum registro este mês.', 'info')
-        return redirect(url_for('records.dashboard'))
-    
-    temp_pdf = f'temp_report_{current_user.id}.pdf'
-    generate_professional_pdf(temp_pdf, records, current_user.name, current_user.company, now.strftime('%B %Y'))
-    
-    if send_email(current_user.email, 'Relatório Mensal de Horas', 'Seu relatório mensal está anexado.', temp_pdf):
-        flash('Relatório mensal enviado para o seu e-mail!', 'success')
-    else:
-        flash('Falha ao enviar o relatório! Contate o suporte.', 'error')
-    os.remove(temp_pdf)
-    return redirect(url_for('records.dashboard'))
+        if rec.photo_path:
+            try:
+                img_data = requests.get(rec.photo_path).content
