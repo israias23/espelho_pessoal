@@ -35,7 +35,7 @@ def load_user(user_id):
 
 def send_email(to, subject, body, attachment_path=None):
     from_email = 'pontopessoal128@gmail.com'
-    password = 'anmo cdis mims skfa'
+    password = 'rcas emoy weba twtx'
     msg = MIMEMultipart()
     msg['From'] = from_email
     msg['To'] = to
