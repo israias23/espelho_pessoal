@@ -9,6 +9,13 @@ def get_user_by_id(user_id):
         logging.error(f"Erro ao buscar usuário {user_id}: {e}")
         return None
 
+def get_user_by_email(email):
+    try:
+        return User.query.filter_by(email=email).first()
+    except Exception as e:
+        logging.error(f"Erro ao buscar email {email}: {e}")
+        return None
+
 def delete_user(user):
     try:
         db.session.delete(user)
