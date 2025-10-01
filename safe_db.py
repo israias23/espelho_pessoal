@@ -1,3 +1,12 @@
+from safe_db import (
+    get_user_by_id,
+    get_user_by_email,
+    delete_user,
+    update_user_password,
+    update_user_profile,
+    save_push_subscription
+)
+
 # safe_db.py
 from models import db, User
 import logging
