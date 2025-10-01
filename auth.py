@@ -14,6 +14,13 @@ import uuid
 import json
 from pywebpush import webpush, WebPushException
 from flask import current_app as app
+from safe_db import get_user_by_id
+
+user = get_user_by_id(user_id)
+if not user:
+    flash('Erro interno ao buscar usuário.', 'error')
+    return redirect(url_for('auth.login'))
+
 
 auth_bp = Blueprint('auth', __name__)
 
