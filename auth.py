@@ -18,6 +18,7 @@ from safe_db import (
     save_push_subscription
 )
 from email_utils import send_email_resend
+from cloudinary_utils import upload_image_to_cloudinary
 
 auth_bp = Blueprint('auth', __name__)
 login_manager = LoginManager()
