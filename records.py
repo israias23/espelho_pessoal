@@ -145,20 +145,47 @@ def manual_send_monthly_report():
 @records_bp.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
-    records = Record.query.filter_by(user_id=current_user.id).all()
+    if request.method == 'POST':
+        photo = request.files.get('photo')
+        entry_type = request.form.get('type')
+        note = request.form.get('note')
+        break_duration = request.form.get('break_duration')
+        location = request.form.get('location')
 
+        if not photo or not entry_type:
+            flash('Foto e tipo são obrigatórios.', 'error')
+            return redirect(url_for('records.dashboard'))
+
+        now = datetime.now()
+        date = now.strftime('%Y-%m-%d')
+        time = now.strftime('%H:%M:%S')
+        filename = f"{date}_{time}"
+        photo_url = upload_image_to_cloudinary(photo.stream, filename)
+
+        record = Record(
+            user_id=current_user.id,
+            date=date,
+            time=time,
+            type=entry_type,
+            note=note,
+            break_duration=int(break_duration) if break_duration else 0,
+            location=location,
+            photo_path=photo_url
+        )
+
+        db.session.add(record)
+        db.session.commit()
+        flash('Registro salvo com sucesso!', 'success')
+        return redirect(url_for('records.dashboard'))
+
+    # Aqui continua o bloco GET normalmente
+    records = Record.query.filter_by(user_id=current_user.id).all()
     daily_hours = {}
     total_hours = 0
 
     for record in records:
-        # Se record.date for string, convertemos para datetime
-        if isinstance(record.date, str):
-            date_obj = datetime.strptime(record.date, "%Y-%m-%d")
-        else:
-            date_obj = record.date
-
+        date_obj = datetime.strptime(record.date, "%Y-%m-%d") if isinstance(record.date, str) else record.date
         date_str = date_obj.strftime('%Y-%m-%d')
-
         hours = record.hours
         daily_hours[date_str] = daily_hours.get(date_str, 0) + hours
         total_hours += hours
@@ -168,6 +195,7 @@ def dashboard():
         daily_hours=daily_hours,
         total_hours=total_hours
     )
+
     
 @records_bp.route('/calendar')
 @login_required
