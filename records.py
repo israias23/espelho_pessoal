@@ -198,15 +198,22 @@ def dashboard():
         vapid_public_key=app.config['VAPID_PUBLIC_KEY']
     )
     
-@records_bp.route('/calendar')
+calendar_bp = Blueprint('calendar', __name__)
+
+@calendar_bp.route('/calendar')
 @login_required
 def calendar():
     records = Record.query.filter_by(user_id=current_user.id).all()
-    events = [{
-        'title': f"{rec.type} at {rec.time}",
-        'start': f"{rec.date}T{rec.time}",
-        'description': rec.note
-    } for rec in records]
+
+    events = []
+    for record in records:
+        events.append({
+            "title": f"{record.type.capitalize()} - {record.company}",
+            "start": record.date.strftime("%Y-%m-%dT%H:%M:%S"),
+            "type": record.type,  # já é 'entry' ou 'exit'
+            "note": getattr(record, 'note', None),
+            "location": getattr(record, 'location', None)
+        })
 
     return render_template('calendar.html', events=events)
 
