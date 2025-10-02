@@ -19,6 +19,20 @@
   document.addEventListener('DOMContentLoaded', function () {
     var calendarEl = document.getElementById('calendar');
 
+    var events = {{ events | tojson | safe }};
+
+    // Ajusta cores de acordo com o tipo do evento
+    events = events.map(event => {
+      if (event.type === "entry") {
+        event.color = "#28a745"; // verde para entrada
+      } else if (event.type === "exit") {
+        event.color = "#dc3545"; // vermelho para saída
+      } else {
+        event.color = "#007bff"; // azul padrão
+      }
+      return event;
+    });
+
     var calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
       headerToolbar: {
@@ -34,13 +48,20 @@
         day: 'Dia',
         list: 'Lista'
       },
-      events: {{ events | tojson | safe }},
-      eventColor: '#007bff',
+      events: events,
       eventDisplay: 'block',
       eventDidMount: function(info) {
         // Tooltip ao passar o mouse no evento
+        let content = `<strong>${info.event.title}</strong><br>`;
+        if (info.event.extendedProps.note) {
+          content += `Nota: ${info.event.extendedProps.note}<br>`;
+        }
+        if (info.event.extendedProps.location) {
+          content += `Local: ${info.event.extendedProps.location}`;
+        }
+
         tippy(info.el, {
-          content: info.event.title + "<br>" + (info.event.extendedProps.note || ""),
+          content: content,
           allowHTML: true,
           theme: 'light-border',
         });
