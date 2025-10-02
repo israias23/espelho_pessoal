@@ -19,7 +19,6 @@ import os
 
 records_bp = Blueprint('records', __name__)
 
-
 def send_monthly_report():
     with app.app_context():
         for user in User.query.all():
@@ -142,7 +141,11 @@ def manual_send_monthly_report():
     os.remove(temp_pdf)
     return redirect(url_for('records.dashboard'))
 
-
+@records_bp.route('/dashboard')
+@login_required
+def dashboard():
+    return render_template('dashboard.html')
+    
 @records_bp.route('/calendar')
 @login_required
 def calendar():
