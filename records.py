@@ -144,7 +144,22 @@ def manual_send_monthly_report():
 @records_bp.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('dashboard.html')
+    records = Record.query.filter_by(user_id=current_user.id).all()
+
+    # Agrupar horas por dia
+    daily_hours = {}
+    total_hours = 0
+    for record in records:
+        date_str = record.date.strftime('%Y-%m-%d')
+        hours = record.hours
+        daily_hours[date_str] = daily_hours.get(date_str, 0) + hours
+        total_hours += hours
+
+    return render_template(
+        'dashboard.html',
+        daily_hours=daily_hours,
+        total_hours=total_hours
+    )
     
 @records_bp.route('/calendar')
 @login_required
