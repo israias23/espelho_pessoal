@@ -1,89 +1,125 @@
 {% extends 'base.html' %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-<h2 class="mb-4">Olá, {{ current_user.name }}!</h2>
-<div class="card mb-4">
-    <div class="card-body">
-        <h5 class="card-title">Adicionar novo registro</h5>
-        <form method="POST" enctype="multipart/form-data">
-            <div class="mb-3">
-                <label class="form-label">Foto (use camera ou faça upload)</label>
-                <input type="file" name="photo" class="form-control" capture="camera" accept="image/*" onchange="previewPhoto(this, 'photoPreview')" required>
-                <img id="photoPreview" class="thumbnail mt-2" style="display:none;">
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Tipo</label>
-                <select name="type" class="form-select" required>
-                    <option value="entry">Entrada</option>
-                    <option value="exit">Saída</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Anotação</label>
-                <input type="text" name="note" class="form-control">
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Intervalo</label>
-                <input type="number" name="break_duration" class="form-control">
-            </div>
-            <input type="hidden" name="location" id="location">
-            <button type="submit" class="btn btn-primary">Salvar Registro</button>
-        </form>
-    </div>
-</div>
-<div class="card">
-    <div class="card-body">
-        <h5 class="card-title">Seus Registros</h5>
-        {% if records %}
-        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Data</th>
-                        <th>Horário</th>
-                        <th>Tipo</th>
-                        <th>Anotação</th>
-                        <th>Intervalo</th>
-                        <th>Local</th>
-                        <th>Registro</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for rec in records %}
-                    <tr>
-                        <td>{{ rec.date }}</td>
-                        <td>{{ rec.time }}</td>
-                        <td>{{ rec.type | capitalize }}</td>
-                        <td>{{ rec.note }}</td>
-                        <td>{{ rec.break_duration }}</td>
-                        <td>{{ rec.location }}</td>
-                        <td><img src="/{{ rec.photo_path }}" class="thumbnail" alt="Photo"></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+
+<h2 class="mb-4">👋 Olá, {{ current_user.name }}!</h2>
+
+<!-- Card: Novo Registro -->
+<div class="card shadow mb-4">
+  <div class="card-body">
+    <h5 class="card-title mb-3">➕ Adicionar novo registro</h5>
+    <form method="POST" action="{{ url_for('records.dashboard') }}" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label class="form-label">📸 Foto (use câmera ou faça upload)</label>
+        <input type="file" name="photo" class="form-control" capture="camera" accept="image/*" onchange="previewPhoto(this, 'photoPreview')" required>
+        <img id="photoPreview" class="rounded mt-2" style="display:none; max-width: 120px; border: 2px solid #ddd;">
+      </div>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">📌 Tipo</label>
+          <select name="type" class="form-select" required>
+            <option value="entry">Entrada</option>
+            <option value="exit">Saída</option>
+          </select>
         </div>
-        {{ pagination.links }}
-        {% else %}
-        <p>No records yet.</p>
-        {% endif %}
-        <h5>Daily Hours</h5>
-        <ul>
-            {% for date, hours in daily_hours.items() %}
-            <li>{{ date }}: {{ hours | round(2) }} hours</li>
-            {% endfor %}
-        </ul>
-        <a href="{{ url_for('records.download_pdf') }}" class="btn btn-outline-primary mt-3">Baixar PDF</a>
-        <a href="{{ url_for('records.download_excel') }}" class="btn btn-outline-primary mt-3">Baixar Excel</a>
-        <a href="{{ url_for('records.manual_send_monthly_report') }}" class="btn btn-outline-success mt-3">Enviar por E-mail</a>
-        <a href="{{ url_for('records.calendar') }}" class="btn btn-outline-info mt-3">Calendário</a>
-    </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">📝 Anotação</label>
+          <input type="text" name="note" class="form-control">
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">⏱ Intervalo (minutos)</label>
+        <input type="number" name="break_duration" class="form-control">
+      </div>
+      <input type="hidden" name="location" id="location">
+      <button type="submit" class="btn btn-primary">
+        💾 Salvar Registro
+      </button>
+    </form>
+  </div>
 </div>
+
+<!-- Card: Seus Registros -->
+<div class="card shadow mb-4">
+  <div class="card-body">
+    <h5 class="card-title mb-3">📂 Seus Registros</h5>
+    {% if records %}
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Data</th>
+            <th>Horário</th>
+            <th>Tipo</th>
+            <th>Anotação</th>
+            <th>Intervalo</th>
+            <th>Local</th>
+            <th>Registro</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rec in records %}
+          <tr>
+            <td>{{ rec.date }}</td>
+            <td>{{ rec.time }}</td>
+            <td><span class="badge bg-{{ 'success' if rec.type == 'entry' else 'danger' }}">{{ rec.type | capitalize }}</span></td>
+            <td>{{ rec.note or '-' }}</td>
+            <td>{{ rec.break_duration or '-' }}</td>
+            <td>{{ rec.location or '-' }}</td>
+            <td><img src="/{{ rec.photo_path }}" class="img-thumbnail" style="max-width: 60px;" alt="Photo"></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {{ pagination.links }}
+    {% else %}
+    <p class="text-muted">Nenhum registro encontrado ainda.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Card: Relatórios e Estatísticas -->
+<div class="card shadow">
+  <div class="card-body">
+    <h5 class="card-title mb-3">📊 Estatísticas</h5>
+    <ul class="list-group mb-3">
+      {% for date, hours in daily_hours.items() %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        {{ date }}
+        <span class="badge bg-primary rounded-pill">{{ hours | round(2) }} h</span>
+      </li>
+      {% endfor %}
+    </ul>
+
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('records.download_pdf') }}" class="btn btn-outline-primary">📄 Baixar PDF</a>
+      <a href="{{ url_for('records.download_excel') }}" class="btn btn-outline-primary">📊 Baixar Excel</a>
+      <a href="{{ url_for('records.manual_send_monthly_report') }}" class="btn btn-outline-success">📧 Enviar por E-mail</a>
+      <a href="{{ url_for('records.calendar') }}" class="btn btn-outline-info">📅 Calendário</a>
+    </div>
+  </div>
+</div>
+
+<!-- Geolocalização -->
 <script>
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-            document.getElementById('location').value = position.coords.latitude + ',' + position.coords.longitude;
-        });
-    }
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(function(position) {
+    document.getElementById('location').value = position.coords.latitude + ',' + position.coords.longitude;
+  });
+}
+function previewPhoto(input, previewId) {
+  const preview = document.getElementById(previewId);
+  const file = input.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      preview.src = e.target.result;
+      preview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+  }
+}
 </script>
+
 {% endblock %}
