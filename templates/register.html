@@ -1,27 +1,48 @@
 {% extends 'base.html' %}
-{% block title %}Register{% endblock %}
+{% block title %}Cadastro{% endblock %}
 {% block content %}
-<div class="card p-4">
-    <h2 class="text-center mb-4">Cadastro</h2>
-    <form method="POST">
-        <div class="mb-3">
-            <label class="form-label">Nomde completo</label>
-            <input type="text" name="name" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" name="email" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Senha</label>
-            <input type="password" name="password" class="form-control" minlength="8" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Empresa atual</label>
-            <input type="text" name="company" class="form-control" required>
-        </div>
-        <button type="submit" class="btn btn-primary w-100">Cadastrar</button>
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: 85vh;">
+  <div class="card shadow-lg p-4" style="width: 100%; max-width: 450px; border-radius: 15px;">
+    
+    <!-- Título -->
+    <h2 class="text-center mb-4">📝 Cadastro</h2>
+    
+    <!-- Formulário -->
+    <form method="POST" action="{{ url_for('auth.register') }}">
+      <!-- Nome -->
+      <div class="mb-3">
+        <label class="form-label">👤 Nome completo</label>
+        <input type="text" name="name" class="form-control" placeholder="Ex: Maria Silva" required>
+      </div>
+
+      <!-- Email -->
+      <div class="mb-3">
+        <label class="form-label">📧 Email</label>
+        <input type="email" name="email" class="form-control" placeholder="exemplo@email.com" required>
+      </div>
+
+      <!-- Senha -->
+      <div class="mb-3">
+        <label class="form-label">🔒 Senha</label>
+        <input type="password" name="password" class="form-control" placeholder="Mínimo 8 caracteres" minlength="8" required>
+      </div>
+
+      <!-- Empresa -->
+      <div class="mb-3">
+        <label class="form-label">🏢 Empresa atual</label>
+        <input type="text" name="company" class="form-control" placeholder="Nome da sua empresa" required>
+      </div>
+
+      <!-- Botão -->
+      <button type="submit" class="btn btn-success w-100 mt-2">🚀 Cadastrar</button>
     </form>
-    <p class="text-center mt-3">Já tem conta? <a href="{{ url_for('auth.login') }}">Login</a></p>
+
+    <!-- Link para login -->
+    <div class="text-center mt-3">
+      <p>Já tem conta? <a href="{{ url_for('auth.login') }}"><strong>Faça login</strong></a></p>
+    </div>
+  </div>
 </div>
+
 {% endblock %}
