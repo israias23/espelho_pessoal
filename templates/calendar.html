@@ -1,17 +1,70 @@
 {% extends 'base.html' %}
-{% block title %}Calendar{% endblock %}
+{% block title %}Calendário{% endblock %}
 {% block content %}
-<div id='calendar'></div>
-<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+
+<div class="container mt-4">
+  <div class="card shadow-lg p-4" style="border-radius: 15px;">
+    <h2 class="text-center mb-4">📅 Meu Calendário de Registros</h2>
+    <div id="calendar"></div>
+  </div>
+</div>
+
+<!-- FullCalendar CSS & JS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/tippy.js@6"></script>
+
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function () {
     var calendarEl = document.getElementById('calendar');
+
     var calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',
-      events: {{ events | tojson | safe }}
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+      },
+      locale: 'pt-br',
+      buttonText: {
+        today: 'Hoje',
+        month: 'Mês',
+        week: 'Semana',
+        day: 'Dia',
+        list: 'Lista'
+      },
+      events: {{ events | tojson | safe }},
+      eventColor: '#007bff',
+      eventDisplay: 'block',
+      eventDidMount: function(info) {
+        // Tooltip ao passar o mouse no evento
+        tippy(info.el, {
+          content: info.event.title + "<br>" + (info.event.extendedProps.note || ""),
+          allowHTML: true,
+          theme: 'light-border',
+        });
+      }
     });
+
     calendar.render();
   });
 </script>
+
+<style>
+  #calendar {
+    max-width: 100%;
+    margin: 0 auto;
+  }
+  .fc-toolbar-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+  }
+  .fc .fc-button {
+    border-radius: 8px !important;
+    padding: 6px 12px !important;
+  }
+</style>
+
 {% endblock %}
