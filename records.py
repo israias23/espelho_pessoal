@@ -142,7 +142,7 @@ def manual_send_monthly_report():
     os.remove(temp_pdf)
     return redirect(url_for('records.dashboard'))
 
-@records_bp.route('/dashboard')
+@records_bp.route('/dashboard', methods=['GET', 'POST'])
 @login_required
 def dashboard():
     records = Record.query.filter_by(user_id=current_user.id).all()
