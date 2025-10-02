@@ -15,6 +15,7 @@ from flask import current_app as app
 from cloudinary_utils import upload_image_to_cloudinary
 import requests
 from tempfile import NamedTemporaryFile
+from datetime import datetime
 import os
 
 records_bp = Blueprint('records', __name__)
@@ -146,11 +147,18 @@ def manual_send_monthly_report():
 def dashboard():
     records = Record.query.filter_by(user_id=current_user.id).all()
 
-    # Agrupar horas por dia
     daily_hours = {}
     total_hours = 0
+
     for record in records:
-        date_str = record.date.strftime('%Y-%m-%d')
+        # Se record.date for string, convertemos para datetime
+        if isinstance(record.date, str):
+            date_obj = datetime.strptime(record.date, "%Y-%m-%d")
+        else:
+            date_obj = record.date
+
+        date_str = date_obj.strftime('%Y-%m-%d')
+
         hours = record.hours
         daily_hours[date_str] = daily_hours.get(date_str, 0) + hours
         total_hours += hours
