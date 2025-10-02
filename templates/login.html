@@ -1,20 +1,37 @@
 {% extends 'base.html' %}
 {% block title %}Login{% endblock %}
 {% block content %}
-<div class="card p-4">
-    <h2 class="text-center mb-4">Login</h2>
-    <form method="POST">
-        <div class="mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" name="email" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Senha</label>
-            <input type="password" name="password" class="form-control" required>
-        </div>
-        <button type="submit" class="btn btn-primary w-100">Acessar</button>
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+  <div class="card shadow-lg p-4" style="width: 100%; max-width: 400px; border-radius: 15px;">
+    
+    <!-- Título -->
+    <h2 class="text-center mb-4">🔑 Login</h2>
+    
+    <!-- Formulário -->
+    <form method="POST" action="{{ url_for('auth.login') }}">
+      <!-- Email -->
+      <div class="mb-3">
+        <label class="form-label">📧 Email</label>
+        <input type="email" name="email" class="form-control" placeholder="exemplo@email.com" required>
+      </div>
+
+      <!-- Senha -->
+      <div class="mb-3">
+        <label class="form-label">🔒 Senha</label>
+        <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+      </div>
+
+      <!-- Botão -->
+      <button type="submit" class="btn btn-primary w-100 mt-2">➡️ Entrar</button>
     </form>
-    <p class="text-center mt-3"><a href="{{ url_for('auth.forgot_password') }}">Esqueceu a senha?</a></p>
-    <p class="text-center">Não tem conta? <a href="{{ url_for('auth.register') }}">Cadastro</a></p>
+
+    <!-- Links extras -->
+    <div class="text-center mt-3">
+      <a href="{{ url_for('auth.forgot_password') }}" class="d-block mb-2">Esqueceu a senha?</a>
+      <p>Não tem conta? <a href="{{ url_for('auth.register') }}"><strong>Cadastre-se</strong></a></p>
+    </div>
+  </div>
 </div>
+
 {% endblock %}
