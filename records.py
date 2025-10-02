@@ -178,24 +178,25 @@ def dashboard():
         flash('Registro salvo com sucesso!', 'success')
         return redirect(url_for('records.dashboard'))
 
-    # Aqui continua o bloco GET normalmente
+    # GET: carregar registros e calcular horas
     records = Record.query.filter_by(user_id=current_user.id).all()
-    daily_hours = {}
-    total_hours = 0
+    daily_hours = calculate_hours(records)
+    total_hours = sum(daily_hours.values())
 
-    for record in records:
-        date_obj = datetime.strptime(record.date, "%Y-%m-%d") if isinstance(record.date, str) else record.date
-        date_str = date_obj.strftime('%Y-%m-%d')
-        hours = record.hours
-        daily_hours[date_str] = daily_hours.get(date_str, 0) + hours
-        total_hours += hours
+    page, per_page, offset = get_page_args(page_parameter='page', per_page_parameter='per_page')
+    per_page = 10
+    total = len(records)
+    paginated_records = records[offset: offset + per_page]
+    pagination = Pagination(page=page, per_page=per_page, total=total, css_framework='bootstrap5')
 
     return render_template(
         'dashboard.html',
+        records=paginated_records,
+        pagination=pagination,
         daily_hours=daily_hours,
-        total_hours=total_hours
+        total_hours=total_hours,
+        vapid_public_key=app.config['VAPID_PUBLIC_KEY']
     )
-
     
 @records_bp.route('/calendar')
 @login_required
